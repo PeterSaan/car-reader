@@ -1,14 +1,30 @@
-#include <iostream>
+#include <print>
+#include <termios.h>
+#include <fcntl.h>
+#include <unistd.h>
 
-#include "person.h"
+void read()
+{
+	const char device[] = "/dev/random";
+	int fd = open(device, O_RDONLY | O_NONBLOCK | O_NOCTTY);
+	if (fd == -1) {
+		std::println("Error: Couldn't open file {}", device);
+		return;
+	}
+
+	if (!isatty(fd)) {
+		std::println("Error: {} is not a TTY", device);
+		close(fd);
+		return;
+	}
+
+	close(fd);
+}
 
 int main()
 {
-	Person peter("Peter", "Saan", 20);
-	Person sebastian("Sebastian", "Pebsen", "Zachrau", 20);
-
-	std::cout << peter.getName() << std::endl;
-	std::cout << sebastian.getName() << std::endl;
+	read();
+	std::println("Compilation successful!");
 
 	return 0;
 }
