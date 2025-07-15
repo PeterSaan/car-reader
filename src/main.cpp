@@ -6,10 +6,12 @@
 
 std::string parseError(const int &code) {
 	switch (code) {
-		case 0: return "";
-		case -1: return "Couldn't open file";
+		case 0: return "Successful";
+		case -1: return "Error opening file";
 		case -2: return "Specified file is not a TTY";
-		case -3: return "Couldn't get the configuration of the serial interface";
+		case -3: return "Error getting the configuration of the serial interface";
+		case -4: return "Error setting input and output speeds";
+		case -5: return "Error setting new configuration for the serial interface";
 		default: return "Unknown error";
 	}
 }
@@ -26,12 +28,28 @@ int connect() {
 		return -2;
 	}
 
-	if (tcgetattr(fd, &config) < 0) {
+	if (tcgetattr(fd, &tconfig) < 0) {
 		close(fd);
 		return -3;
 	}
 
-	config
+	tconfig.c_iflag &= ~(INPCK | ISTRIP | IXON | BRKINT);
+	tconfig.c_oflag &= OPOST;
+	tconfig.c_lflag &= ~(ICANON | ECHO | ISIG | IEXTEN);
+	tconfig.c_cflag &= ~(CSIZE | PARENB);
+	tconfig.c_cflag |= CS8;
+	tconfig.c_cc[VMIN] = 1;
+	tconfig.c_cc[VTIME] = 0;
+
+	if (cfsetspeed(&tconfig, B9600) < 0) {
+		close(fd);
+		return -4;
+	}
+
+	if (tcsetattr(fd, TCSANOW, &tconfig) < 0) {
+		close(fd);
+		return -5;
+	}
 
 	close(fd);
 	return 0;
@@ -40,14 +58,7 @@ int connect() {
 int main() {
 	const int connectStatus = connect();
 
-	while (!connectStatus) {
-		std::println("Connected to serial device");
-	}
+	std::println("connect() exited: {}", parseError(connectStatus));
 
-	if (connectStatus != 0) {
-		std::println("connect() exited with error: {}", parseError(connectStatus));
-	}
-
-	std::println("Compilation successful!");
 	return 0;
 }
