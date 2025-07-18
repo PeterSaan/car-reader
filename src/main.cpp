@@ -38,7 +38,6 @@ int init() {
 		return -3;
 	}
 
-	// 7O1
 	initConfig.c_cflag |= PARENB;
 	initConfig.c_cflag |= PARODD;
 	initConfig.c_cflag &= ~CSTOPB;
@@ -48,6 +47,16 @@ int init() {
 	if (cfsetspeed(&initConfig, 5) < 0) {
 		close(fd);
 		return -4;
+	}
+
+	talkConfig.c_cflag &= ~PARENB;
+	talkConfig.c_cflag &= ~CSTOPB;
+	talkConfig.c_cflag &= ~CSIZE;
+	talkConfig.c_cflag |= CS8;
+
+	if (cfsetspeed(&initConfig, 10400) < 0) {
+		close(fd);
+		return -7;
 	}
 
 	if (tcsetattr(fd, TCSANOW, &initConfig) < 0) {
@@ -63,15 +72,10 @@ int init() {
 		return -6;
 	}
 
-	/*if (cfsetspeed(&initConfig, 10400) < 0) {
-		close(fd);
-		return -7;
-	}
-
-	if (tcsetattr(fd, TCSANOW, &initConfig) < 0) {
+	if (tcsetattr(fd, TCSAFLUSH, &initConfig) < 0) {
 		close(fd);
 		return -8;
-	}*/
+	}
 
 	while (true) {
 		int initResponseByte[1];
